@@ -17,11 +17,16 @@ fn main() -> io::Result<()> {
 
     println!("-- Get Vendor, Product, Version and unique serial number");
     get_vendor_product_version(&mut system_root_key_node);
+
     println!("-- Get Vendor-ID (VID) and Product-ID (PID)");
     get_vid_pid(&mut system_root_key_node);
+
     println!("-- Get Volume GUIDs");
+    get_volume_guid(&mut system_root_key_node);
+
     println!("-- Get Drive letter and Volume Name");
     get_volume_name_drive_letter(&mut software_root_key_node);
+
     println!("-- Get Volume Serial Number");
     println!("-- Get User that used USB");
     println!("-- Get First time device was connected");
@@ -66,6 +71,48 @@ fn get_volume_name_drive_letter<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>,
     }
 }
 
+fn get_volume_guid<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
+    //Seems that the parsing of MountedDevices does not work
+    let mounteddevices = root_key_node.subpath("MountedDevices").unwrap().unwrap();
+    let key_values_list = mounteddevices.values().unwrap().unwrap();
+    for s in key_values_list {
+        let raw_s = s.unwrap();
+        println!("{}", raw_s.name().unwrap());
+        let binary_data = raw_s.data().unwrap().into_vec().unwrap();
+        match str::from_utf8(&binary_data) {
+            Ok(string_data) => {
+                let split_infos: Vec<&str> = string_data.split("&").collect::<Vec<&str>>();
+                if split_infos.len() > 4 {
+                    let extract_type = split_infos
+                        .get(0)
+                        .unwrap()
+                        .split("#")
+                        .collect::<Vec<&str>>();
+                    let extract_usn_version = split_infos
+                        .get(3)
+                        .unwrap()
+                        .split("#")
+                        .collect::<Vec<&str>>();
+
+                    println!("Type: {}", extract_type.get(1).unwrap());
+                    println!("Vendor: {}", split_infos.get(1).unwrap());
+                    println!("Product: {}", split_infos.get(2).unwrap());
+                    println!("Version: {}", extract_usn_version.get(0).unwrap());
+                    println!("USN: {}", extract_usn_version.get(1).unwrap());
+                }
+            }
+            Err(_err) => unsafe {
+                if str::from_utf8_unchecked(&binary_data).contains("DMIO:ID:") {
+                    println!("Signature of GPT partition, start with DMIO...");
+                } else {
+                    println!("Impossible to decode {{{:?}}}", binary_data);
+                }
+            },
+        };
+        println!();
+    }
+}
+
 fn get_vid_pid<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
     let usbstor = root_key_node
         .subpath("ControlSet001\\Enum\\USB")
@@ -81,6 +128,9 @@ fn get_vid_pid<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
             println!("PID: {}", split_infos.get(1).unwrap());
         }
 
+        let mut vid_pid_subkeys = raw_vid_pid.subkeys().unwrap().unwrap();
+        let raw_usn = vid_pid_subkeys.next().unwrap().unwrap();
+        println!("USN: {}", raw_usn.name().unwrap());
         println!()
     }
 }
