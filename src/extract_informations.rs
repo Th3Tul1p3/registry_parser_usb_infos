@@ -8,14 +8,14 @@ use utility::*;
 pub fn get_vendor_product_version<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
     // get list of all subkeys
     let usbstor = root_key_node
-        .subpath(utility::CONTROLSET_ENUM_USBSTOR)
+        .subpath(CONTROLSET_ENUM_USBSTOR)
         .unwrap()
         .unwrap();
     let key_list = usbstor.subkeys().unwrap().unwrap();
 
     for key in key_list {
         // get the raw string, the name of the key
-        let string_device_class_id: String = utility::name_to_string_keynode(key);
+        let string_device_class_id: String = name_to_string_keynode(key);
 
         // split
         let split_infos: Vec<&str> = string_device_class_id.split("&").collect::<Vec<&str>>();
@@ -25,19 +25,20 @@ pub fn get_vendor_product_version<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]
         println!("Version: {}", split_infos.get(3).unwrap());
 
         // retrieve USB Unique serial number
-        let path = [
-            utility::CONTROLSET_ENUM_USBSTOR,
-            "\\",
-            &string_device_class_id,
-        ]
-        .join("");
-        let unique_serial_number_folder = root_key_node.subpath(&path).unwrap().unwrap();
+        let path_to_device_class_id =
+            [CONTROLSET_ENUM_USBSTOR, "\\", &string_device_class_id].join("");
+        let unique_serial_number_folder = root_key_node
+            .subpath(&path_to_device_class_id)
+            .unwrap()
+            .unwrap();
         let mut unique_serial_number_keys = unique_serial_number_folder.subkeys().unwrap().unwrap();
-        get_usb_unique_serial_number(&mut unique_serial_number_keys);
+        let string_usn = *get_usb_unique_serial_number(&mut unique_serial_number_keys);
 
+        let path_usn = [&path_to_device_class_id, "\\", &string_usn].join("");
+        get_all_timestamps(root_key_node, path_usn);
         println!()
     }
-    utility::separator();
+    separator();
 }
 
 fn get_usb_unique_serial_number<'a>(registry: &mut SubKeyNodes<'a, &'a [u8]>) -> Box<String> {
@@ -57,7 +58,7 @@ fn get_usb_unique_serial_number<'a>(registry: &mut SubKeyNodes<'a, &'a [u8]>) ->
 
 pub fn get_volume_name_drive_letter<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
     // get list of all subkeys
-    let devices = utility::get_directory(root_key_node, utility::MICROSOFT_WPD_DEVICES);
+    let devices = get_directory(root_key_node, MICROSOFT_WPD_DEVICES);
     let key_list = devices.subkeys().unwrap().unwrap();
 
     for key in key_list {
@@ -78,12 +79,12 @@ pub fn get_volume_name_drive_letter<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a
 
         println!()
     }
-    utility::separator();
+    separator();
 }
 
 pub fn get_vid_pid<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
     // get list of all subkeys
-    let usbstor = utility::get_directory(root_key_node, utility::CONTROLSET_ENUM_USB);
+    let usbstor = get_directory(root_key_node, CONTROLSET_ENUM_USB);
     let key_list = usbstor.subkeys().unwrap().unwrap();
 
     for key in key_list {
@@ -100,13 +101,12 @@ pub fn get_vid_pid<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>
         println!("Unique serial number: {}", raw_usn.name().unwrap());
         println!()
     }
-    utility::separator();
+    separator();
 }
 
 pub fn get_volume_guid<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
-    //Seems that the parsing of MountedDevices does not work
     // get list of all subkeys
-    let mounteddevices = get_directory(root_key_node, utility::MOUNTED_DEVICES);
+    let mounteddevices = get_directory(root_key_node, MOUNTED_DEVICES);
     let key_values_list = mounteddevices.values().unwrap().unwrap();
 
     for key_value in key_values_list {
@@ -148,69 +148,28 @@ pub fn get_volume_guid<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [
         };
         println!();
     }
-    utility::separator();
+    separator();
 }
 
-pub fn get_all_timestamps<'a>(root_key_node: &'a mut KeyNode<&'a Hive<&'a [u8]>, &'a [u8]>) {
-    // get list of all subkeys
-    let usbstor = root_key_node
-        .subpath(utility::CONTROLSET_ENUM_USBSTOR)
+pub fn get_all_timestamps<'a>(
+    root_key_node: &'a KeyNode<&Hive<&'a [u8]>, &'a [u8]>,
+    path_to_get_usn: String,
+) {
+    // first install
+    let first_install_path = [&path_to_get_usn, SUFFIX_FIRST_INSTALL].join("");
+    let first_install_path_values = root_key_node.subpath(&first_install_path).unwrap().unwrap();
+    print_timestamp(&first_install_path_values, "First install (UTC):");
+
+    // Last Connected
+    let last_connected_path = [&path_to_get_usn, SUFFIX_LAST_CONNECTED].join("");
+    let last_connected_path_values = root_key_node
+        .subpath(&last_connected_path)
         .unwrap()
         .unwrap();
-    let key_list = usbstor.subkeys().unwrap().unwrap();
+    print_timestamp(&last_connected_path_values, "Last Connected (UTC):");
 
-    for key in key_list {
-        // get the raw string, the name of the key
-        let string_device_class_id: String = utility::name_to_string_keynode(key);
-
-        // retrieve USB Unique serial number
-        let path_to_get_usn = [
-            utility::CONTROLSET_ENUM_USBSTOR,
-            "\\",
-            &string_device_class_id,
-        ]
-        .join("");
-
-        let unique_serial_number_folder = prepare_path(
-            &utility::CONTROLSET_ENUM_USBSTOR,
-            &string_device_class_id,
-            "",
-            root_key_node,
-        );
-
-        let mut unique_serial_number_keys = unique_serial_number_folder.subkeys().unwrap().unwrap();
-        let unique_serial_number_key = unique_serial_number_keys.next().unwrap();
-        let extract_usn: String = utility::name_to_string_keynode(unique_serial_number_key);
-        println!("{}", string_device_class_id);
-
-        // first install
-        let mut first_install_path = prepare_path(
-            &path_to_get_usn,
-            &extract_usn,
-            utility::SUFFIX_FIRST_INSTALL,
-            root_key_node,
-        );
-        print_timestamp(&mut first_install_path, "First install (UTC):");
-
-        // Last Connected
-        let mut last_connected_path = prepare_path(
-            &path_to_get_usn,
-            &extract_usn,
-            utility::SUFFIX_LAST_CONNECTED,
-            root_key_node,
-        );
-        print_timestamp(&mut last_connected_path, "Last Connected (UTC):");
-
-        // Last Removal
-        let mut last_removal_path = prepare_path(
-            &path_to_get_usn,
-            &extract_usn,
-            utility::SUFFIX_LAST_REMOVED,
-            root_key_node,
-        );
-        print_timestamp(&mut last_removal_path, "Last Removal (UTC):");
-
-        println!()
-    }
-    separator();
+    // Last Removal
+    let last_removal_path = [&path_to_get_usn, SUFFIX_LAST_REMOVED].join("");
+    let last_removal_path_values = root_key_node.subpath(&last_removal_path).unwrap().unwrap();
+    print_timestamp(&last_removal_path_values, "Last Removal (UTC):");
 }

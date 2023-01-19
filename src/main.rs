@@ -9,8 +9,7 @@ use extract_informations::*;
 fn main() -> io::Result<()> {
     let system_buffer = utility::get_registry_root("system");
     let system_hive: Hive<&[u8]> = Hive::new(system_buffer.as_ref()).unwrap();
-    let mut system_root_key_node: KeyNode<&Hive<&[u8]>, &[u8]> =
-        system_hive.root_key_node().unwrap();
+    let system_root_key_node: KeyNode<&Hive<&[u8]>, &[u8]> = system_hive.root_key_node().unwrap();
 
     let software_buffer = utility::get_registry_root("software");
     let software_hive: Hive<&[u8]> = Hive::new(software_buffer.as_ref()).unwrap();
@@ -31,8 +30,6 @@ fn main() -> io::Result<()> {
 
     println!("-- Get Volume Serial Number");
     println!("-- Get User that used USB");
-
-    get_all_timestamps(&mut system_root_key_node);
 
     Ok(())
 }
