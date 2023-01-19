@@ -3,7 +3,7 @@ use nt_hive::Hive;
 use nt_hive::KeyNode;
 use nt_hive::SubKeyNodes;
 use std::str;
-use utility::get_directory;
+use utility::*;
 
 pub fn get_vendor_product_version<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
     // get list of all subkeys
@@ -132,7 +132,10 @@ pub fn get_volume_guid<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [
                     println!("Vendor: {}", split_infos.get(1).unwrap());
                     println!("Product: {}", split_infos.get(2).unwrap());
                     println!("Version: {}", extract_usn_version.get(0).unwrap());
-                    println!("Unique serial number: {}", extract_usn_version.get(1).unwrap());
+                    println!(
+                        "Unique serial number: {}",
+                        extract_usn_version.get(1).unwrap()
+                    );
                 }
             }
             Err(_err) => unsafe {
@@ -146,4 +149,68 @@ pub fn get_volume_guid<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [
         println!();
     }
     utility::separator();
+}
+
+pub fn get_all_timestamps<'a>(root_key_node: &'a mut KeyNode<&'a Hive<&'a [u8]>, &'a [u8]>) {
+    // get list of all subkeys
+    let usbstor = root_key_node
+        .subpath(utility::CONTROLSET_ENUM_USBSTOR)
+        .unwrap()
+        .unwrap();
+    let key_list = usbstor.subkeys().unwrap().unwrap();
+
+    for key in key_list {
+        // get the raw string, the name of the key
+        let string_device_class_id: String = utility::name_to_string_keynode(key);
+
+        // retrieve USB Unique serial number
+        let path_to_get_usn = [
+            utility::CONTROLSET_ENUM_USBSTOR,
+            "\\",
+            &string_device_class_id,
+        ]
+        .join("");
+
+        let unique_serial_number_folder = prepare_path(
+            &utility::CONTROLSET_ENUM_USBSTOR,
+            &string_device_class_id,
+            "",
+            root_key_node,
+        );
+
+        let mut unique_serial_number_keys = unique_serial_number_folder.subkeys().unwrap().unwrap();
+        let unique_serial_number_key = unique_serial_number_keys.next().unwrap();
+        let extract_usn: String = utility::name_to_string_keynode(unique_serial_number_key);
+        println!("{}", string_device_class_id);
+
+        // first install
+        let mut first_install_path = prepare_path(
+            &path_to_get_usn,
+            &extract_usn,
+            utility::SUFFIX_FIRST_INSTALL,
+            root_key_node,
+        );
+        print_timestamp(&mut first_install_path, "First install (UTC):");
+
+        // Last Connected
+        let mut last_connected_path = prepare_path(
+            &path_to_get_usn,
+            &extract_usn,
+            utility::SUFFIX_LAST_CONNECTED,
+            root_key_node,
+        );
+        print_timestamp(&mut last_connected_path, "Last Connected (UTC):");
+
+        // Last Removal
+        let mut last_removal_path = prepare_path(
+            &path_to_get_usn,
+            &extract_usn,
+            utility::SUFFIX_LAST_REMOVED,
+            root_key_node,
+        );
+        print_timestamp(&mut last_removal_path, "Last Removal (UTC):");
+
+        println!()
+    }
+    separator();
 }

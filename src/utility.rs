@@ -74,3 +74,30 @@ pub fn split_iso_timestamp<'a>(iso_timestamp: LocalDateTime) -> Vec<String> {
         .for_each(|x| string_vec.push(x.to_string()));
     return string_vec;
 }
+
+pub fn prepare_path<'a>(
+    path_to_get_usn: &str,
+    extract_usn: &str,
+    suffix: &str,
+    root_key_node: &'a KeyNode<&Hive<&'a [u8]>, &'a [u8]>,
+) -> KeyNode<&'a Hive<&'a [u8]>, &'a [u8]> {
+    let last_removal_install = [&path_to_get_usn, "\\", &extract_usn, suffix].join("");
+    root_key_node
+        .subpath(&last_removal_install)
+        .unwrap()
+        .unwrap()
+}
+
+pub fn print_timestamp<'a>(path: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>, message: &str) {
+    let mut values = path.values().unwrap().unwrap();
+    let raw_value = values.next().unwrap().unwrap();
+    let raw_nanos_value = raw_value.data().unwrap().into_vec().unwrap();
+    let timestamp_part = split_iso_timestamp(rawvalue_to_timestamp(raw_nanos_value));
+
+    println!(
+        "{} {} {}",
+        message,
+        timestamp_part.get(0).unwrap(),
+        timestamp_part.get(1).unwrap()
+    );
+}
