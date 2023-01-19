@@ -1,9 +1,9 @@
+use crate::utility;
 use nt_hive::Hive;
 use nt_hive::KeyNode;
 use nt_hive::SubKeyNodes;
-use utility::get_directory;
-use crate::utility;
 use std::str;
+use utility::get_directory;
 
 pub fn get_vendor_product_version<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
     // get list of all subkeys
@@ -15,7 +15,7 @@ pub fn get_vendor_product_version<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]
 
     for key in key_list {
         // get the raw string, the name of the key
-        let string_device_class_id: String = utility::keynode_name_to_string(key);
+        let string_device_class_id: String = utility::name_to_string_keynode(key);
 
         // split
         let split_infos: Vec<&str> = string_device_class_id.split("&").collect::<Vec<&str>>();
@@ -57,7 +57,6 @@ fn get_usb_unique_serial_number<'a>(registry: &mut SubKeyNodes<'a, &'a [u8]>) ->
     }
     return box_string_usn;
 }
-
 
 pub fn get_volume_name_drive_letter<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
     // get list of all subkeys

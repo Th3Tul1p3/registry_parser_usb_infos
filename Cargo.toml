@@ -10,3 +10,4 @@ winreg = "0.10.1"
 
 [target.'cfg(windows)'.dependencies]
 nt-hive = "0.2.0"
+datetime = "0.5.2"

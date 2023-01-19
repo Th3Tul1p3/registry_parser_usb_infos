@@ -2,8 +2,9 @@ use nt_hive::Hive;
 use nt_hive::KeyNode;
 use std::io;
 mod utility;
-use utility::separator;
+use utility::*;
 mod extract_informations;
+use datetime::ISO;
 use extract_informations::*;
 
 fn main() -> io::Result<()> {
@@ -23,7 +24,7 @@ fn main() -> io::Result<()> {
     get_vid_pid(&mut system_root_key_node.clone());
 
     println!("-- Get Volume GUIDs");
-    get_volume_guid(&mut system_root_key_node);
+    get_volume_guid(&mut system_root_key_node.clone());
 
     println!("-- Get Drive letter and Volume Name");
     get_volume_name_drive_letter(&mut software_root_key_node);
@@ -31,14 +32,14 @@ fn main() -> io::Result<()> {
     println!("-- Get Volume Serial Number");
     println!("-- Get User that used USB");
     println!("-- Get First time device was connected");
-    //_get_timestamps(&mut system_root_key_node);
+    get_timestamps(&mut system_root_key_node);
     println!("-- Get First time device was connected after reboot");
     println!("-- Get Last time connected");
     println!("-- Get Time device was removed");
     Ok(())
 }
 
-fn _get_timestamps<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
+fn get_timestamps<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
     // get list of all subkeys
     let usbstor = root_key_node
         .subpath(utility::CONTROLSET_ENUM_USBSTOR)
@@ -48,7 +49,7 @@ fn _get_timestamps<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
 
     for key in key_list {
         // get the raw string, the name of the key
-        let string_device_class_id: String = utility::keynode_name_to_string(key);
+        let string_device_class_id: String = utility::name_to_string_keynode(key);
 
         // retrieve USB Unique serial number
         let path_to_get_usn = [
@@ -57,19 +58,30 @@ fn _get_timestamps<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
             &string_device_class_id,
         ]
         .join("");
-
+        let unique_serial_number_folder = root_key_node.subpath(&path_to_get_usn).unwrap().unwrap();
+        let mut unique_serial_number_keys = unique_serial_number_folder.subkeys().unwrap().unwrap();
+        let unique_serial_number_key = unique_serial_number_keys.next().unwrap();
+        let extract_usn: String = utility::name_to_string_keynode(unique_serial_number_key);
         let path_first_install = [
-            utility::CONTROLSET_ENUM_USBSTOR,
+            &path_to_get_usn,
             "\\",
-            &string_device_class_id,
+            &extract_usn,
             utility::SUFFIX_FIRST_INSTALL,
         ]
         .join("");
-        println!("{}", path_to_get_usn);
-        let unique_serial_number_folder =
-            root_key_node.subpath(&path_first_install).unwrap().unwrap();
+        let first_install_path = root_key_node.subpath(&path_first_install).unwrap().unwrap();
+        println!("{}", path_first_install);
+        let mut first_install_values = first_install_path.values().unwrap().unwrap();
 
-        let unique_serial_number_keys = unique_serial_number_folder.subkeys().unwrap().unwrap();
+        let raw_value = first_install_values.next().unwrap().unwrap();
+        let raw_nanos_value = raw_value.data().unwrap().into_vec().unwrap();
+
+        println!(
+            "{}",
+            utility::rawvalue_to_timestamp(raw_nanos_value)
+                .iso()
+                .to_string()
+        );
 
         println!()
     }
