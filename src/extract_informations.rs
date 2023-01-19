@@ -35,10 +35,7 @@ pub fn get_vendor_product_version<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]
         let mut unique_serial_number_keys = unique_serial_number_folder.subkeys().unwrap().unwrap();
         get_usb_unique_serial_number(&mut unique_serial_number_keys);
 
-        println!(
-            "USN: {}",
-            get_usb_unique_serial_number(&mut unique_serial_number_keys)
-        )
+        println!()
     }
     utility::separator();
 }
@@ -68,7 +65,7 @@ pub fn get_volume_name_drive_letter<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a
         let string_key: String = raw_key.name().unwrap().to_string_checked().unwrap();
         let split_infos: Vec<&str> = string_key.split("#").collect::<Vec<&str>>();
         if split_infos.len() > 5 {
-            println!("USN: {}", split_infos.get(4).unwrap());
+            println!("Unique serial number: {}", split_infos.get(4).unwrap());
         } else {
             println!("Volume GUID: {}", split_infos.get(2).unwrap())
         }
@@ -100,7 +97,7 @@ pub fn get_vid_pid<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>
 
         let mut vid_pid_subkeys = raw_vid_pid.subkeys().unwrap().unwrap();
         let raw_usn = vid_pid_subkeys.next().unwrap().unwrap();
-        println!("USN: {}", raw_usn.name().unwrap());
+        println!("Unique serial number: {}", raw_usn.name().unwrap());
         println!()
     }
     utility::separator();
@@ -135,7 +132,7 @@ pub fn get_volume_guid<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [
                     println!("Vendor: {}", split_infos.get(1).unwrap());
                     println!("Product: {}", split_infos.get(2).unwrap());
                     println!("Version: {}", extract_usn_version.get(0).unwrap());
-                    println!("USN: {}", extract_usn_version.get(1).unwrap());
+                    println!("Unique serial number: {}", extract_usn_version.get(1).unwrap());
                 }
             }
             Err(_err) => unsafe {

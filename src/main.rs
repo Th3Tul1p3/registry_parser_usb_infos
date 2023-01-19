@@ -4,13 +4,13 @@ use std::io;
 mod utility;
 use utility::*;
 mod extract_informations;
-use datetime::ISO;
 use extract_informations::*;
 
 fn main() -> io::Result<()> {
     let system_buffer = utility::get_registry_root("system");
     let system_hive: Hive<&[u8]> = Hive::new(system_buffer.as_ref()).unwrap();
-    let mut system_root_key_node = system_hive.root_key_node().unwrap();
+    let mut system_root_key_node: KeyNode<&Hive<&[u8]>, &[u8]> =
+        system_hive.root_key_node().unwrap();
 
     let software_buffer = utility::get_registry_root("software");
     let software_hive: Hive<&[u8]> = Hive::new(software_buffer.as_ref()).unwrap();
@@ -31,15 +31,13 @@ fn main() -> io::Result<()> {
 
     println!("-- Get Volume Serial Number");
     println!("-- Get User that used USB");
-    println!("-- Get First time device was connected");
-    get_timestamps(&mut system_root_key_node);
-    println!("-- Get First time device was connected after reboot");
-    println!("-- Get Last time connected");
-    println!("-- Get Time device was removed");
+
+    get_all_timestamps(&mut system_root_key_node);
+
     Ok(())
 }
 
-fn get_timestamps<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
+fn get_all_timestamps<'a>(root_key_node: &'a mut KeyNode<&'a Hive<&'a [u8]>, &'a [u8]>) {
     // get list of all subkeys
     let usbstor = root_key_node
         .subpath(utility::CONTROLSET_ENUM_USBSTOR)
@@ -58,32 +56,74 @@ fn get_timestamps<'a>(root_key_node: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
             &string_device_class_id,
         ]
         .join("");
-        let unique_serial_number_folder = root_key_node.subpath(&path_to_get_usn).unwrap().unwrap();
+
+        let unique_serial_number_folder = prepare_path(
+            &utility::CONTROLSET_ENUM_USBSTOR,
+            &string_device_class_id,
+            "",
+            root_key_node,
+        );
+
         let mut unique_serial_number_keys = unique_serial_number_folder.subkeys().unwrap().unwrap();
         let unique_serial_number_key = unique_serial_number_keys.next().unwrap();
         let extract_usn: String = utility::name_to_string_keynode(unique_serial_number_key);
-        let path_first_install = [
+        println!("{}", string_device_class_id);
+
+        // first install
+        let mut first_install_path = prepare_path(
             &path_to_get_usn,
-            "\\",
             &extract_usn,
             utility::SUFFIX_FIRST_INSTALL,
-        ]
-        .join("");
-        let first_install_path = root_key_node.subpath(&path_first_install).unwrap().unwrap();
-        println!("{}", path_first_install);
-        let mut first_install_values = first_install_path.values().unwrap().unwrap();
-
-        let raw_value = first_install_values.next().unwrap().unwrap();
-        let raw_nanos_value = raw_value.data().unwrap().into_vec().unwrap();
-
-        println!(
-            "{}",
-            utility::rawvalue_to_timestamp(raw_nanos_value)
-                .iso()
-                .to_string()
+            root_key_node,
         );
+        print_timestamp(&mut first_install_path, "First install (UTC):");
+
+        // Last Connected
+        let mut last_connected_path = prepare_path(
+            &path_to_get_usn,
+            &extract_usn,
+            utility::SUFFIX_LAST_CONNECTED,
+            root_key_node,
+        );
+        print_timestamp(&mut last_connected_path, "Last Connected (UTC):");
+
+        // Last Removal
+        let mut last_removal_path = prepare_path(
+            &path_to_get_usn,
+            &extract_usn,
+            utility::SUFFIX_LAST_REMOVED,
+            root_key_node,
+        );
+        print_timestamp(&mut last_removal_path, "Last Removal (UTC):");
 
         println!()
     }
     separator();
+}
+
+fn prepare_path<'a>(
+    path_to_get_usn: &str,
+    extract_usn: &str,
+    suffix: &str,
+    root_key_node: &'a KeyNode<&Hive<&'a [u8]>, &'a [u8]>,
+) -> KeyNode<&'a Hive<&'a [u8]>, &'a [u8]> {
+    let last_removal_install = [&path_to_get_usn, "\\", &extract_usn, suffix].join("");
+    root_key_node
+        .subpath(&last_removal_install)
+        .unwrap()
+        .unwrap()
+}
+
+fn print_timestamp<'a>(path: &mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>, message: &str) {
+    let mut values = path.values().unwrap().unwrap();
+    let raw_value = values.next().unwrap().unwrap();
+    let raw_nanos_value = raw_value.data().unwrap().into_vec().unwrap();
+    let timestamp_part = split_iso_timestamp(utility::rawvalue_to_timestamp(raw_nanos_value));
+
+    println!(
+        "{} {} {}",
+        message,
+        timestamp_part.get(0).unwrap(),
+        timestamp_part.get(1).unwrap()
+    );
 }

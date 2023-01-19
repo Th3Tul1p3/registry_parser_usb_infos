@@ -2,6 +2,7 @@ use datetime::LocalDate;
 use datetime::LocalDateTime;
 use datetime::LocalTime;
 use datetime::Month;
+use datetime::ISO;
 use nt_hive::Hive;
 use nt_hive::KeyNode;
 use nt_hive::NtHiveError;
@@ -12,10 +13,9 @@ use std::time::Duration;
 
 pub static SUFFIX_FIRST_INSTALL: &str =
     "\\Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0064";
-pub static _SUFFIX_LAST_CONNECTED: &str =
+pub static SUFFIX_LAST_CONNECTED: &str =
     "\\Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0066";
-pub static _SUFFIX_LAST_REMOVED: &str =
-    "\\Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0067";
+pub static SUFFIX_LAST_REMOVED: &str = "\\Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0067";
 pub static _SUFFIX_FIRST_INSTALL_DATE: &str =
     "\\Properties\\{83da6326-97a6-4088-9453-a1923f573b29}\\0065";
 pub static MICROSOFT_WPD_DEVICES: &str = "Microsoft\\Windows Portable Devices\\Devices";
@@ -63,4 +63,14 @@ pub fn rawvalue_to_timestamp(tmp: Vec<u8>) -> LocalDateTime {
     let windows_base_time = LocalTime::hm(hour, minute).unwrap();
     let windows_base_timestamp = LocalDateTime::new(windows_base_date, windows_base_time);
     windows_base_timestamp.add_seconds(nanos_to_secs)
+}
+
+pub fn split_iso_timestamp<'a>(iso_timestamp: LocalDateTime) -> Vec<String> {
+    let mut string_vec: Vec<String> = Vec::new();
+    iso_timestamp
+        .iso()
+        .to_string()
+        .split("T")
+        .for_each(|x| string_vec.push(x.to_string()));
+    return string_vec;
 }
