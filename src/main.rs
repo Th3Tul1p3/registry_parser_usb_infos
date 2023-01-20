@@ -1,5 +1,4 @@
-use nt_hive::Hive;
-use nt_hive::KeyNode;
+use nt_hive::*;
 use std::io;
 mod utility;
 use utility::*;

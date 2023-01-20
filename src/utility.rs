@@ -1,11 +1,5 @@
-use datetime::LocalDate;
-use datetime::LocalDateTime;
-use datetime::LocalTime;
-use datetime::Month;
-use datetime::ISO;
-use nt_hive::Hive;
-use nt_hive::KeyNode;
-use nt_hive::NtHiveError;
+use datetime::*;
+use nt_hive::*;
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::Read;
@@ -25,10 +19,21 @@ pub static CONTROLSET_ENUM_USB: &str = "ControlSet001\\Enum\\USB";
 
 pub fn get_registry_root<'a>(filename: &str) -> Vec<u8> {
     let mut system_buffer: Vec<u8> = Vec::new();
-    File::open(filename.to_string())
-        .unwrap()
-        .read_to_end(&mut system_buffer)
-        .unwrap();
+    let mut test = match File::open(filename.to_string()) {
+        Ok(file) => file,
+        Err(_) => {
+            eprintln!("An error occured during the opening of \'{}\'.", filename);
+            std::process::exit(0)
+        }
+    };
+
+    match test.read_to_end(&mut system_buffer) {
+        Ok(file) => file,
+        Err(_) => {
+            eprintln!("An error occured during the reading of \'{}\'.", filename);
+            std::process::exit(0)
+        }
+    };
     return system_buffer;
 }
 
