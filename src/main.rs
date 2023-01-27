@@ -4,8 +4,11 @@ mod utility;
 use utility::*;
 mod extract_informations;
 use extract_informations::*;
+mod structure;
+use structure::UsbInfo;
 
 fn main() -> io::Result<()> {
+    let mut list_usb_keys_infos: Vec<UsbInfo> = vec![];
     let system_buffer = utility::get_registry_root("system");
     let system_hive: Hive<&[u8]> = Hive::new(system_buffer.as_ref()).unwrap();
     let system_root_key_node: KeyNode<&Hive<&[u8]>, &[u8]> = system_hive.root_key_node().unwrap();
@@ -16,10 +19,10 @@ fn main() -> io::Result<()> {
 
     separator();
     println!("-- Get Vendor, Product, Version and unique serial number");
-    get_vendor_product_version(&mut system_root_key_node.clone());
+    get_vendor_product_version(&mut system_root_key_node.clone(), &mut list_usb_keys_infos);
 
     println!("-- Get Vendor-ID (VID) and Product-ID (PID)");
-    get_vid_pid(&mut system_root_key_node.clone());
+    get_vid_pid(&mut system_root_key_node.clone(), &mut list_usb_keys_infos);
 
     println!("-- Get Volume GUIDs");
     get_volume_guid(&mut system_root_key_node.clone());
@@ -29,6 +32,10 @@ fn main() -> io::Result<()> {
 
     println!("-- Get Volume Serial Number");
     println!("-- Get User that used USB");
+
+    for usb in list_usb_keys_infos {
+        println!("{}", usb);
+    }
 
     Ok(())
 }

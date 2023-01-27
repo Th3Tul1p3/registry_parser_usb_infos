@@ -53,7 +53,7 @@ pub fn name_to_string_keynode<'a>(
 }
 
 pub fn separator() {
-    println!("------------------------------------------------------------------------------------------------------------")
+    println!("-------------------------------------------------------------------")
 }
 
 pub fn rawvalue_to_timestamp(tmp: Vec<u8>) -> LocalDateTime {
@@ -80,16 +80,13 @@ pub fn split_iso_timestamp<'a>(iso_timestamp: LocalDateTime) -> Vec<String> {
     return string_vec;
 }
 
-pub fn print_timestamp<'a>(path: &KeyNode<&Hive<&'a [u8]>, &'a [u8]>, message: &str) {
+pub fn extract_timestamp<'a>(path: &KeyNode<&Hive<&'a [u8]>, &'a [u8]>) -> String {
     let mut values = path.values().unwrap().unwrap();
     let raw_value = values.next().unwrap().unwrap();
     let raw_nanos_value = raw_value.data().unwrap().into_vec().unwrap();
     let timestamp_part = split_iso_timestamp(rawvalue_to_timestamp(raw_nanos_value));
-
-    println!(
-        "{} {} {}",
-        message,
-        timestamp_part.get(0).unwrap(),
-        timestamp_part.get(1).unwrap()
-    );
+    let mut tmp = timestamp_part.get(0).unwrap().to_owned();
+    tmp.push(' ');
+    tmp.push_str(&timestamp_part.get(1).unwrap());
+    tmp
 }
