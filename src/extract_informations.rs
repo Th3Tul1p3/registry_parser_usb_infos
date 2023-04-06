@@ -178,15 +178,8 @@ pub fn get_volume_guid<'a>(
     for key_value in key_values_list {
         let raw_s = key_value.unwrap();
         let key_value_name = raw_s.name().unwrap().to_string();
-        // extract GUID
-        let start_guid: usize = match key_value_name.find('{') {
-            None => continue,
-            Some(pos) => pos,
-        };
 
-        let guid = key_value_name[start_guid..start_guid + 38].to_string();
         let mut usn = String::new();
-
         let binary_data = raw_s.data().unwrap().into_vec().unwrap();
         match str::from_utf8(&binary_data) {
             Ok(string_data) => {
@@ -213,7 +206,18 @@ pub fn get_volume_guid<'a>(
         match find_usn(usn.clone(), list) {
             None => {}
             Some(position) => {
-                list.get_mut(position).unwrap().guid = guid;
+                if key_value_name.contains("DosDevices") {
+                    list.get_mut(position)
+                        .unwrap()
+                        .friendly_name
+                        .push(key_value_name[key_value_name.len() - 3..].to_string());
+                } else {
+                    // extract GUID
+                    list.get_mut(position).unwrap().guid = match key_value_name.find('{') {
+                        None => continue,
+                        Some(pos) => key_value_name[pos..pos + 38].to_string(),
+                    };
+                }
             }
         }
     }
