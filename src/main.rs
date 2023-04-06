@@ -9,11 +9,11 @@ use structure::UsbInfo;
 
 fn main() -> io::Result<()> {
     let mut list_usb_keys_infos: Vec<UsbInfo> = vec![];
-    let system_buffer = utility::get_registry_root("system");
+    let system_buffer = utility::get_registry_root("System");
     let system_hive: Hive<&[u8]> = Hive::new(system_buffer.as_ref()).unwrap();
     let system_root_key_node: KeyNode<&Hive<&[u8]>, &[u8]> = system_hive.root_key_node().unwrap();
 
-    let software_buffer = utility::get_registry_root("software");
+    let software_buffer = utility::get_registry_root("Software");
     let software_hive: Hive<&[u8]> = Hive::new(software_buffer.as_ref()).unwrap();
     let mut software_root_key_node = software_hive.root_key_node().unwrap();
 
@@ -25,10 +25,12 @@ fn main() -> io::Result<()> {
     get_vid_pid(&mut system_root_key_node.clone(), &mut list_usb_keys_infos);
 
     println!("-- Get Volume GUIDs");
-    get_volume_guid(&mut system_root_key_node.clone());
-
+    get_volume_guid(&mut system_root_key_node.clone(), &mut list_usb_keys_infos);
+    for usb in list_usb_keys_infos {
+        println!("{}", usb);
+    }
     println!("-- Get Drive letter and Volume Name");
-    get_volume_name_drive_letter(&mut software_root_key_node);
+    get_volume_name_drive_letter(&mut software_root_key_node.clone());
 
     println!("-- Get Volume Serial Number");
     println!("-- Get User that used USB");
