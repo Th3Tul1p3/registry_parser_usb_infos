@@ -12,6 +12,7 @@ pub struct UsbInfo {
     pub pid: String,
     pub vid: String,
     pub guid: String,
+    pub friendly_name: Vec<String>,
 }
 
 impl fmt::Display for UsbInfo {
@@ -28,7 +29,8 @@ Last Connected (UTC): \t{}
 Last Removal (UTC): \t{}
 PID: \t\t\t{}
 VID: \t\t\t{}
-GUID: \t\t\t{}\n",
+GUID: \t\t\t{}
+Friendly name: \t{:?}\n",
             self.drive_type,
             self.vendor,
             self.product,
@@ -40,6 +42,7 @@ GUID: \t\t\t{}\n",
             self.pid,
             self.vid,
             self.guid,
+            self.friendly_name
         )
     }
 }
@@ -58,6 +61,7 @@ impl UsbInfo {
             pid: "".to_string(),
             vid: "".to_string(),
             guid: "".to_string(),
+            friendly_name: Vec::new(),
         }
     }
 }

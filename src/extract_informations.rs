@@ -87,7 +87,10 @@ fn get_usb_unique_serial_number<'a>(
     }
 }
 
-pub fn get_volume_name_drive_letter<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
+pub fn get_volume_name_drive_letter<'a>(
+    root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>,
+    list: &mut Vec<UsbInfo>,
+) {
     // get list of all subkeys
     let devices = root_key_node.subpath(MICROSOFT_WPD_DEVICES).unwrap();
     let device_subkey = devices.unwrap();
@@ -97,21 +100,34 @@ pub fn get_volume_name_drive_letter<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a
         let raw_key = key.unwrap();
         let string_key: String = raw_key.name().unwrap().to_string_checked().unwrap();
         let split_infos: Vec<&str> = string_key.split("#").collect::<Vec<&str>>();
+
+        let friendly_name = match raw_key
+            .value("FriendlyName")
+            .unwrap()
+            .unwrap()
+            .string_data()
+        {
+            Ok(friendly_name) => friendly_name,
+            Err(_) => continue,
+        };
+
         if split_infos.len() > 5 {
-            println!("Unique serial number: {}", split_infos.get(4).unwrap());
+            let usn = split_infos.get(4).unwrap().to_string();
+            let split_usn: Vec<&str> = usn.split("&").collect::<Vec<&str>>();
+            match find_usn(split_usn.get(0).unwrap().to_string(), list) {
+                None => {}
+                Some(position) => {
+                    list.get_mut(position)
+                        .unwrap()
+                        .friendly_name
+                        .push(friendly_name);
+                }
+            }
         } else {
-            println!("Volume GUID: {}", split_infos.get(2).unwrap())
+            // means that there is no usn in string
+            //println!("Volume GUID: {}", split_infos.get(2).unwrap())
         }
-
-        let key_value = raw_key.value("FriendlyName").unwrap().unwrap();
-        let multi_sz_data = key_value.string_data();
-        if let Ok(vec) = multi_sz_data {
-            println!("Friendly name : {:?}", vec);
-        }
-
-        println!()
     }
-    separator();
 }
 
 pub fn get_vid_pid<'a>(
@@ -196,7 +212,6 @@ pub fn get_volume_guid<'a>(
         };
         match find_usn(usn.clone(), list) {
             None => {}
-
             Some(position) => {
                 list.get_mut(position).unwrap().guid = guid;
             }

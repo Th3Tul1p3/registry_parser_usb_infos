@@ -15,7 +15,7 @@ fn main() -> io::Result<()> {
 
     let software_buffer = utility::get_registry_root("Software");
     let software_hive: Hive<&[u8]> = Hive::new(software_buffer.as_ref()).unwrap();
-    let mut software_root_key_node = software_hive.root_key_node().unwrap();
+    let software_root_key_node = software_hive.root_key_node().unwrap();
 
     separator();
     println!("-- Get Vendor, Product, Version and unique serial number");
@@ -27,7 +27,10 @@ fn main() -> io::Result<()> {
     println!("-- Get Volume GUIDs");
     get_volume_guid(&mut system_root_key_node.clone(), &mut list_usb_keys_infos);
     println!("-- Get Drive letter and Volume Name");
-    get_volume_name_drive_letter(&mut software_root_key_node.clone());
+    get_volume_name_drive_letter(
+        &mut software_root_key_node.clone(),
+        &mut list_usb_keys_infos,
+    );
 
     println!("-- Get Volume Serial Number");
     println!("-- Get User that used USB");
