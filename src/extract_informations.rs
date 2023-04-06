@@ -90,8 +90,8 @@ fn get_usb_unique_serial_number<'a>(
 pub fn get_volume_name_drive_letter<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
     // get list of all subkeys
     let devices = root_key_node.subpath(MICROSOFT_WPD_DEVICES).unwrap();
-    let test = devices.unwrap();
-    let key_list = test.subkeys().unwrap().unwrap();
+    let device_subkey = devices.unwrap();
+    let key_list = device_subkey.subkeys().unwrap().unwrap();
 
     for key in key_list {
         let raw_key = key.unwrap();
@@ -130,7 +130,7 @@ pub fn get_vid_pid<'a>(
         let mut vid_pid_subkeys = raw_vid_pid.subkeys().unwrap().unwrap();
         let raw_usn = vid_pid_subkeys.next().unwrap().unwrap();
 
-        let mut pid = "".to_string();
+        let mut pid = String::new();
         if !split_infos.get(0).unwrap().contains("ROOT_HUB") {
             pid = split_infos.get(1).unwrap().to_string();
         }
@@ -176,16 +176,8 @@ pub fn get_volume_guid<'a>(
             Ok(string_data) => {
                 let split_infos: Vec<&str> = string_data.split("&").collect::<Vec<&str>>();
                 if split_infos.len() > 4 {
-                    let extract_usn_version = split_infos
-                        .get(3)
-                        .unwrap()
-                        .split("#")
-                        .collect::<Vec<&str>>();
-                    let arrayu8 = extract_usn_version.get(1).unwrap().as_bytes();
-                    for c in arrayu8.iter(){
-                        if *c == 0{
-                            continue;
-                        }else {
+                    let extract                    for c in extract_usn_version.get(1).unwrap().as_bytes().iter() {
+                        if *c != 0 {
                             usn.push(*c as char);
                         }
                     }
@@ -200,7 +192,15 @@ pub fn get_volume_guid<'a>(
             },
         };
         match find_usn(usn.clone(), list) {
+            None => {}
+            println!("Impossible to decode {{{:?}}}", binary_data);
+                }
+            },
+        };
+        match find_usn(usn.clone(), list) {
             None => {
+            }
+{
             }
             Some(position) => {
                 list.get_mut(position).unwrap().guid = guid;
