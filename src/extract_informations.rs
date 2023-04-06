@@ -20,7 +20,6 @@ pub fn get_vendor_product_version<'a>(
         // get the raw string, the name of the key
         let string_device_class_id: String = name_to_string_keynode(key);
 
-        // split
         let split_infos: Vec<&str> = string_device_class_id.split("&").collect::<Vec<&str>>();
         tmp.drive_type = split_infos.get(0).unwrap().to_string();
         tmp.vendor = split_infos.get(1).unwrap().to_string();
@@ -84,14 +83,15 @@ fn get_usb_unique_serial_number<'a>(
             .collect::<Vec<&str>>()
             .get(0)
             .unwrap();
-        usbinfo.usn = string_usn.to_string();
+        usbinfo.usn = String::from_utf8(string_usn.as_bytes().to_vec()).unwrap();
     }
 }
 
 pub fn get_volume_name_drive_letter<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
     // get list of all subkeys
-    let devices = get_directory(root_key_node, MICROSOFT_WPD_DEVICES);
-    let key_list = devices.subkeys().unwrap().unwrap();
+    let devices = root_key_node.subpath(MICROSOFT_WPD_DEVICES).unwrap();
+    let test = devices.unwrap();
+    let key_list = test.subkeys().unwrap().unwrap();
 
     for key in key_list {
         let raw_key = key.unwrap();
@@ -151,38 +151,44 @@ pub fn get_vid_pid<'a>(
     }
 }
 
-pub fn get_volume_guid<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>) {
+pub fn get_volume_guid<'a>(
+    root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>,
+    list: &mut Vec<UsbInfo>,
+) {
     // get list of all subkeys
     let mounteddevices = get_directory(root_key_node, MOUNTED_DEVICES);
     let key_values_list = mounteddevices.values().unwrap().unwrap();
 
     for key_value in key_values_list {
         let raw_s = key_value.unwrap();
-        println!("{}", raw_s.name().unwrap());
+        let key_value_name = raw_s.name().unwrap().to_string();
+        // extract GUID
+        let start_guid: usize = match key_value_name.find('{') {
+            None => continue,
+            Some(pos) => pos,
+        };
+
+        let guid = key_value_name[start_guid..start_guid + 38].to_string();
+        let mut usn = String::new();
+
         let binary_data = raw_s.data().unwrap().into_vec().unwrap();
         match str::from_utf8(&binary_data) {
             Ok(string_data) => {
                 let split_infos: Vec<&str> = string_data.split("&").collect::<Vec<&str>>();
                 if split_infos.len() > 4 {
-                    let extract_type = split_infos
-                        .get(0)
-                        .unwrap()
-                        .split("#")
-                        .collect::<Vec<&str>>();
                     let extract_usn_version = split_infos
                         .get(3)
                         .unwrap()
                         .split("#")
                         .collect::<Vec<&str>>();
-
-                    println!("Type: {}", extract_type.get(1).unwrap());
-                    println!("Vendor: {}", split_infos.get(1).unwrap());
-                    println!("Product: {}", split_infos.get(2).unwrap());
-                    println!("Version: {}", extract_usn_version.get(0).unwrap());
-                    println!(
-                        "Unique serial number: {}",
-                        extract_usn_version.get(1).unwrap()
-                    );
+                    let arrayu8 = extract_usn_version.get(1).unwrap().as_bytes();
+                    for c in arrayu8.iter(){
+                        if *c == 0{
+                            continue;
+                        }else {
+                            usn.push(*c as char);
+                        }
+                    }
                 }
             }
             Err(_err) => unsafe {
@@ -193,7 +199,13 @@ pub fn get_volume_guid<'a>(root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [
                 }
             },
         };
-        println!();
+        match find_usn(usn.clone(), list) {
+            None => {
+            }
+            Some(position) => {
+                list.get_mut(position).unwrap().guid = guid;
+            }
+        }
     }
     separator();
 }
