@@ -176,7 +176,12 @@ pub fn get_volume_guid<'a>(
             Ok(string_data) => {
                 let split_infos: Vec<&str> = string_data.split("&").collect::<Vec<&str>>();
                 if split_infos.len() > 4 {
-                    let extract                    for c in extract_usn_version.get(1).unwrap().as_bytes().iter() {
+                    let extract_usn_version = split_infos
+                        .get(3)
+                        .unwrap()
+                        .split("#")
+                        .collect::<Vec<&str>>();
+                    for c in extract_usn_version.get(1).unwrap().as_bytes().iter() {
                         if *c != 0 {
                             usn.push(*c as char);
                         }
@@ -186,26 +191,15 @@ pub fn get_volume_guid<'a>(
             Err(_err) => unsafe {
                 if str::from_utf8_unchecked(&binary_data).contains("DMIO:ID:") {
                     println!("Signature of GPT partition, start with DMIO...");
-                } else {
-                    println!("Impossible to decode {{{:?}}}", binary_data);
                 }
             },
         };
         match find_usn(usn.clone(), list) {
             None => {}
-            println!("Impossible to decode {{{:?}}}", binary_data);
-                }
-            },
-        };
-        match find_usn(usn.clone(), list) {
-            None => {
-            }
-{
-            }
+
             Some(position) => {
                 list.get_mut(position).unwrap().guid = guid;
             }
         }
     }
-    separator();
 }

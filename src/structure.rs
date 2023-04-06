@@ -63,6 +63,5 @@ impl UsbInfo {
 }
 
 pub fn find_usn(usn: String, vector: &Vec<UsbInfo>) -> Option<usize> {
-    vector.iter().position(|s|  s.usn == usn
-    )
+    vector.iter().position(|s| s.usn == usn)
 }
