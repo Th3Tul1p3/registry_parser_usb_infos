@@ -26,9 +26,6 @@ fn main() -> io::Result<()> {
 
     println!("-- Get Volume GUIDs");
     get_volume_guid(&mut system_root_key_node.clone(), &mut list_usb_keys_infos);
-    for usb in list_usb_keys_infos {
-        println!("{}", usb);
-    }
     println!("-- Get Drive letter and Volume Name");
     get_volume_name_drive_letter(&mut software_root_key_node.clone());
 
