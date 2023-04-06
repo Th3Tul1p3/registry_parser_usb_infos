@@ -11,6 +11,7 @@ pub struct UsbInfo {
     pub last_removed: String,
     pub pid: String,
     pub vid: String,
+    pub guid: String,
 }
 
 impl fmt::Display for UsbInfo {
@@ -26,7 +27,8 @@ First install (UTC): \t{}
 Last Connected (UTC): \t{}
 Last Removal (UTC): \t{}
 PID: \t\t\t{}
-VID: \t\t\t{}\n",
+VID: \t\t\t{}
+GUID: \t\t\t{}\n",
             self.drive_type,
             self.vendor,
             self.product,
@@ -37,6 +39,7 @@ VID: \t\t\t{}\n",
             self.last_removed,
             self.pid,
             self.vid,
+            self.guid,
         )
     }
 }
@@ -54,10 +57,12 @@ impl UsbInfo {
             last_removed: "".to_string(),
             pid: "".to_string(),
             vid: "".to_string(),
+            guid: "".to_string(),
         }
     }
 }
 
 pub fn find_usn(usn: String, vector: &Vec<UsbInfo>) -> Option<usize> {
-    vector.iter().position(|s| s.usn == usn)
+    vector.iter().position(|s|  s.usn == usn
+    )
 }
