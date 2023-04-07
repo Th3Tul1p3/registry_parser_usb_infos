@@ -222,3 +222,23 @@ pub fn get_volume_guid<'a>(
         }
     }
 }
+
+pub fn get_user_infos<'a>(
+    root_key_node: &'a mut KeyNode<&Hive<&'a [u8]>, &'a [u8]>,
+    list: &mut Vec<UsbInfo>,
+) {
+    // get list of all subkeys
+    let mount_point_2 = get_directory(root_key_node, NTUSER);
+    let key_values_list = mount_point_2.subkeys().unwrap().unwrap();
+
+    for key_value in key_values_list {
+        let raw_s = key_value.unwrap();
+        let key_value_name = raw_s.name().unwrap().to_string();
+
+        for usb in list.iter_mut() {
+            if usb.guid == key_value_name {
+                usb.was_used_by_user = usb.guid == key_value_name;
+            }
+        }
+    }
+}

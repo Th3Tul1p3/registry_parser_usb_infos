@@ -16,6 +16,7 @@ pub static MICROSOFT_WPD_DEVICES: &str = "Microsoft\\Windows Portable Devices\\D
 pub static CONTROLSET_ENUM_USBSTOR: &str = "ControlSet001\\Enum\\USBSTOR";
 pub static MOUNTED_DEVICES: &str = "MountedDevices";
 pub static CONTROLSET_ENUM_USB: &str = "ControlSet001\\Enum\\USB";
+pub static NTUSER: &str = "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MountPoints2";
 
 pub fn get_registry_root<'a>(filename: &str) -> Vec<u8> {
     let mut system_buffer: Vec<u8> = Vec::new();

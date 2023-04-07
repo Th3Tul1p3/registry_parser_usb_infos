@@ -1,5 +1,6 @@
 use std::fmt;
 
+#[derive(Clone)]
 pub struct UsbInfo {
     pub drive_type: String,
     pub vendor: String,
@@ -13,6 +14,7 @@ pub struct UsbInfo {
     pub vid: String,
     pub guid: String,
     pub friendly_name: Vec<String>,
+    pub was_used_by_user: bool,
 }
 
 impl fmt::Display for UsbInfo {
@@ -30,7 +32,8 @@ Last Removal (UTC): \t{}
 PID: \t\t\t{}
 VID: \t\t\t{}
 GUID: \t\t\t{}
-Friendly name: \t{:?}\n",
+Friendly name: \t{:?}
+Was used by user: {}\n",
             self.drive_type,
             self.vendor,
             self.product,
@@ -42,7 +45,8 @@ Friendly name: \t{:?}\n",
             self.pid,
             self.vid,
             self.guid,
-            self.friendly_name
+            self.friendly_name,
+            self.was_used_by_user,
         )
     }
 }
@@ -62,6 +66,7 @@ impl UsbInfo {
             vid: "".to_string(),
             guid: "".to_string(),
             friendly_name: Vec::new(),
+            was_used_by_user: false,
         }
     }
 }
