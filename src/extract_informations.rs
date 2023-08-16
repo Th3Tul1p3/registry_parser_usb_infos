@@ -190,11 +190,14 @@ pub fn get_volume_guid<'a>(
                         .unwrap()
                         .split("#")
                         .collect::<Vec<&str>>();
-                    for c in extract_usn_version.get(1).unwrap().as_bytes().iter() {
-                        if *c != 0 {
-                            usn.push(*c as char);
-                        }
-                    }
+                    match extract_usn_version.get(1) {
+                        Some(elem) => {for c in elem.as_bytes().iter() {
+                            if *c != 0 {
+                                usn.push(*c as char);
+                            }
+                        }},
+                        None => {eprint!("No element in Mounted devices.\n")},
+                    };
                 }
             }
             Err(_err) => unsafe {
